@@ -1,27 +1,39 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { ListGroup, Container, Row, Col, Button } from "react-bootstrap";
 import { db } from "../../db";
-import "./todos.css";
-import "./img.png";
-export function Todos() {
-  const [todos, setTodos] = useState([]);
-  const [bool, setBool] = useState(false);
-  useEffect(() => {
-    db.collection("todos").onSnapshot(
-      (snapShot) => {
-        const todoDocs = [];
-        snapShot.forEach((doc) => {
-          todoDocs.push({ ...doc.data(), id: doc.id });
-        });
+import { AuthContext } from "../../auth";
 
-        setTodos(todoDocs);
-      },
-      (err) => {
-        console.log(err);
+export function Todos() {
+  const { currentUser } = useContext(AuthContext);
+  const [todos, setTodos] = useState([]);
+
+  useEffect(() => {
+    let unsubscribe;
+    if (currentUser && currentUser.uid) {
+      unsubscribe = db
+        .collection("todos")
+        .where("userId", "==", currentUser.uid)
+        .onSnapshot(
+          (snapShot) => {
+            const todoDocs = [];
+            snapShot.forEach((doc) => {
+              todoDocs.push({ ...doc.data(), id: doc.id });
+            });
+
+            setTodos(todoDocs);
+          },
+          (err) => {
+            console.log(err);
+          }
+        );
+    }
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
       }
-    );
-    return () => {};
-  }, []);
+    };
+  }, [currentUser]);
+
   const removeTodo = async (todo) => {
     if (todo) {
       await db.collection("todos").doc(todo.id).delete();
@@ -29,7 +41,10 @@ export function Todos() {
   };
   const handleTodo = async (todo) => {
     if (todo) {
-      await db.collection("todos").doc(todo.id).update({ completed: true });
+      await db
+        .collection("todos")
+        .doc(todo.id)
+        .update({ completed: !todo.completed, lastUpdated: Date.now() });
     }
   };
 
@@ -48,11 +63,9 @@ export function Todos() {
               <Col>
                 <h2>{todo.name}</h2>
               </Col>
-              <Col>
+              <Col style={{ display: "flex", justifyContent: "flex-end" }}>
                 <Button variant="blue" onClick={(e) => removeTodo(todo)}>
-                  <h2 className="cross" style={{ cursor: "pointer" }}>
-                    ❌
-                  </h2>
+                  ❌
                 </Button>
               </Col>
             </Row>

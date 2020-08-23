@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { Link } from "react-router-dom";
 import {
   Navbar,
@@ -7,29 +7,35 @@ import {
   InputGroup,
   FormControl,
 } from "react-bootstrap";
-import { db } from "../../db";
-import { app } from "firebase";
-import appp from "../../db/index";
+import { db, auth } from "../../db";
+import { AuthContext } from "../../auth";
+
 export function Header() {
+  const { currentUser } = useContext(AuthContext);
   const [show, setShow] = useState(false);
   const [name, setName] = useState("");
 
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
+
   const handleSignOut = () => {
-    appp.auth().signOut();
+    auth.signOut();
   };
+
   const handleSubmit = async () => {
     try {
-      await db.collection("todos").add({
-        name,
-        completed: false,
-        createdAt: Date.now(),
-        lastUpdated: Date.now(),
-      });
-      //close modal
-      setName("");
-      setShow(false);
+      if (currentUser && currentUser.uid) {
+        await db.collection("todos").add({
+          name,
+          completed: false,
+          createdAt: Date.now(),
+          lastUpdated: Date.now(),
+          userId: currentUser.uid,
+        });
+        //close modal
+        setName("");
+        setShow(false);
+      }
     } catch (error) {
       console.log(error);
     }

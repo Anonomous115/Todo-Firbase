@@ -1,17 +1,16 @@
 import React, { useCallback } from "react";
 import { withRouter } from "react-router";
-import app from "../db/index";
+import { auth } from "../db";
 import { Link } from "react-router-dom";
 import { Form, Container, Button } from "react-bootstrap";
+
 const SignUp = ({ history }) => {
   const handleSignUp = useCallback(
     async (event) => {
       event.preventDefault();
       const { email, password } = event.target.elements;
       try {
-        await app
-          .auth()
-          .createUserWithEmailAndPassword(email.value, password.value);
+        await auth.createUserWithEmailAndPassword(email.value, password.value);
         history.push("/");
       } catch (error) {
         alert(error);
